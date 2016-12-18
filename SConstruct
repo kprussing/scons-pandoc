@@ -4,6 +4,11 @@
 import os
 import sys
 
+try:
+    import pandocfilters
+except ImportError:
+    raise RuntimeError("pandocfilter module required")
+
 def makedirs(target, source, env):
     """Prepare the user .scons directory
 
@@ -40,4 +45,6 @@ if sys.platform not in ("win32", "cygwin") or sys.version_info > (3,2):
     Mkdir(toolsdir)
     develop = env.symlink(target, source)
     env.Alias("develop", develop)
+
+SConscript(os.path.join("example", "SConscript"))
 
