@@ -4,11 +4,6 @@
 import os
 import sys
 
-try:
-    import pandocfilters
-except ImportError:
-    raise RuntimeError("pandocfilter module required")
-
 def makedirs(target, source, env):
     """Prepare the user .scons directory
 
