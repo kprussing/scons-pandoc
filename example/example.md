@@ -65,3 +65,6 @@ sodales nibh, sed rutrum ex. Nulla ultrices dolor nisi. Suspendisse
 ultrices, mi quis vestibulum aliquet, felis risus laoreet libero, ac
 porttitor purus urna vitae quam.
 
+![A second example figure for testing.  Yes I know it's the same.
+](example.png)
+
