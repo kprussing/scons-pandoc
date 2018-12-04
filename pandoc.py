@@ -129,15 +129,15 @@ def _scanner(node, env, path, arg=None):
                     return [src]
 
             else:
+                tmp = [walk(x) for x in data.values()]
                 return [y for x in data.values() for y in walk(x) if y]
 
-        # print("res: ", res)
-        return None
+        return []
 
 
     data = json.loads(tree)
     root = os.path.dirname(str(node))
-    deps = [x for x in walk(data) if x]
+    deps = [x for x in walk(data) if x if x]
     # print("deps: ", deps)
     files = [env.File(os.path.join(root, x)) for x in deps]
     # print("files: ", files)
