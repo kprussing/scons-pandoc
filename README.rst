@@ -21,6 +21,18 @@ in you home directory under ``.scons/site_scons/site_tools``.  For more
 details, check the `user's guide`_.  Alternatively, you can just run
 ``scons install`` and have it installed.
 
+Alternatively, you can add this project as a submodule to your git
+project using
+
+    git submodule add <url> site_scons/site_tools/pandoc
+
+where ``<url>`` is the current URL of the project.  Then you will need
+to add
+
+    env = Environment(tools=["pandoc.pandoc"])
+
+to your ``SConstruct``.
+
 Hacking
 -------
 
