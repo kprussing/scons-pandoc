@@ -113,36 +113,34 @@ def _scanner(node, env, path, arg=None):
         """
         if isinstance(data, list):
             tmp = [walk(x) for x in data]
-            res = [x for x in tmp if x != []]
+            return [x for l in tmp for x in l if x]
 
         elif isinstance(data, dict):
-            res = []
-            if "t" in data and re.match("Image", data["t"], re.I):
-                value = data["c"] if "c" in data else []
-                if len(value) == 2:
-                    # Before pandoc 1.16
-                    alt, [src, title] = value
-                else:
-                    attrs, alt, [src, title] = value
+            if re.match("Image", data.get("t", ""), re.I):
+                value = data.get("c", [])
+                if value:
+                    if len(value) == 2:
+                        # Before pandoc 1.16
+                        alt, [src, title] = value
+                    else:
+                        attrs, alt, [src, title] = value
 
-                # print(src)
-                res.append(src)
+                    # print("src: ", src)
+                    return [src]
+
             else:
-                for key, value in data.items():
-                    res.extend(walk(value))
+                return [y for x in data.values() for y in walk(x) if y]
 
-        else:
-            res = []
-
-        return [x for x in res if x != []]
+        # print("res: ", res)
+        return None
 
 
     data = json.loads(tree)
     root = os.path.dirname(str(node))
-    deps = [x for l in walk(data) for x in l if x != []]
-    # print(deps)
-    files = [env.File(os.path.join(root, x)) for y in deps for x in y]
-    # print(files)
+    deps = [x for x in walk(data) if x]
+    # print("deps: ", deps)
+    files = [env.File(os.path.join(root, x)) for x in deps]
+    # print("files: ", files)
     return files
 
 
