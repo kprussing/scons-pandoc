@@ -1,6 +1,5 @@
 #!/usr/vin/env python
 # coding=utf-8
-from __future__ import unicode_literals
 
 import os
 
@@ -13,7 +12,7 @@ def image(target, source, env):
     fig = matplotlib.pyplot.figure(figsize=(8,5))
     axs = fig.add_subplot(1,1,1)
     for II in range(5):
-        label = "sin({0}π)".format(II)
+        label = "$sin({0:d}\pi)$".format(II)
         axs.plot(xx, numpy.sin(II * xx), label=label)
 
     axs.legend(loc="lower left")
@@ -24,10 +23,10 @@ def image(target, source, env):
     return
 
 
-env = Environment(ENV=os.environ, tools=["pandoc"])
+env = Environment(ENV=os.environ, tools=["default", "pandoc"])
 env.AppendUnique(BUILDERS={"image" : Builder(action=image)})
 
-srcs = Glob("*.md")
+srcs = ["example.md"]
 
 img = env.image("example.png", [])
 html = env.Pandoc("example.html", srcs)
