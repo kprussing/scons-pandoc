@@ -26,7 +26,7 @@ def image(target, source, env):
 env = Environment(ENV=os.environ, tools=["default", "pandoc"])
 env.AppendUnique(BUILDERS={"image" : Builder(action=image)})
 
-srcs = ["example.md"]
+srcs = ["example." + x for x in ("md", "yaml")]
 
 img = env.image("example.png", [])
 html = env.Pandoc("example.html", srcs)
