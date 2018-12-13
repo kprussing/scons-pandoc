@@ -146,7 +146,6 @@ def _scanner(node, env, path, arg=None):
 
 _builder = SCons.Builder.Builder(
         action = SCons.Action.Action("$PANDOC_COM", "$PANDOC_COMSTR"),
-        chdir = 1,
         source_scanner = SCons.Scanner.Scanner(_scanner)
     )
 
