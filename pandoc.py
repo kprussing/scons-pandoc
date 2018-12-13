@@ -65,15 +65,25 @@ class ToolPandocWarning(SCons.Warnings.Warning):
 class PandocNotFound(ToolPandocWarning):
     pass
 
+class PanfluteNotFound(ToolPandocWarning):
+    pass
+
 SCons.Warnings.enableWarningClass(ToolPandocWarning)
 
 def _detect(env):
-    """Try to find Pandoc.
+    """Try to find Pandoc and :package:`panflute`
     """
     try:
         return env["PANDOC"]
     except KeyError:
         pass
+
+    try:
+        import panflute
+    except ImportError:
+        raise SCons.Errors.StopError(
+                PanfluteNotFound, "Could not find :package:`panflute`"
+            )
 
     pandoc = env.WhereIs("pandoc")
     if pandoc:
