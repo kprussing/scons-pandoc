@@ -106,51 +106,21 @@ def _scanner(node, env, path, arg=None):
     have the right thing done.
 
     """
-    import re
+    import panflute
     pandoc = _detect(env)
-    # if not os.path.exists(str(node)):
-        # raise RuntimeError("{0:s} not found".format(node))
+    proc =  subprocess.Popen([pandoc, "-t", "json", str(node)],
+                             stdout=subprocess.PIPE)
+    doc = panflute.load(proc.stdout)
+    def walk(x):
+        if isinstance(x, panflute.Image):
+            return [x.url]
+        else:
+            tmp = [walk(y) for y in getattr(x, "content", [])]
+            return [y for z in tmp for y in z if y]
 
-    tree = subprocess.check_output([pandoc, "-t", "json", str(node)])
-
-    def walk(data):
-        """Heavily borrowed from ``pandocfilters.walk``
-
-        The major difference is we cannot throw out the lower parts of
-        the tree because we need to down as low as possible to find an
-        'Image' item.
-
-        """
-        if isinstance(data, list):
-            tmp = [walk(x) for x in data]
-            return [x for l in tmp for x in l if x]
-
-        elif isinstance(data, dict):
-            if re.match("Image", data.get("t", ""), re.I):
-                value = data.get("c", [])
-                if value:
-                    if len(value) == 2:
-                        # Before pandoc 1.16
-                        alt, [src, title] = value
-                    else:
-                        attrs, alt, [src, title] = value
-
-                    # print("src: ", src)
-                    return [src]
-
-            else:
-                tmp = [walk(x) for x in data.values()]
-                return [y for x in data.values() for y in walk(x) if y]
-
-        return []
-
-
-    data = json.loads(tree)
+    deps = [x for x in walk(doc) if x]
     root = os.path.dirname(str(node))
-    deps = [x for x in walk(data) if x if x]
-    # print("deps: ", deps)
     files = [env.File(os.path.join(root, x)) for x in deps]
-    # print("files: ", files)
     return files
 
 
