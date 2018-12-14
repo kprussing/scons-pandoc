@@ -125,7 +125,7 @@ def _scanner(node, env, path, arg=None):
 
 
 _builder = SCons.Builder.Builder(
-        action = SCons.Action.Action("$PANDOC_COM", "$PANDOC_COMSTR"),
+        action = SCons.Action.Action("$PANDOCCOM", "$PANDOCCOMSTR"),
         source_scanner = SCons.Scanner.Scanner(_scanner)
     )
 
@@ -134,14 +134,14 @@ def generate(env):
     """Add the Builders and construction variables to the Environment
     """
     env["PANDOC"] = _detect(env)
-    command = "$PANDOC $PANDOC_FLAGS -o ${TARGET.file} ${SOURCES.file}"
+    command = "$PANDOC $PANDOCFLAGS -o ${TARGET.file} ${SOURCES.file}"
     env.SetDefault(
             # Command line flags.
-            PANDOC_FLAGS = SCons.Util.CLVar("--standalone"),
+            PANDOCFLAGS = SCons.Util.CLVar("--standalone"),
 
             # Commands.
-            PANDOC_COM = command,
-            PANDOC_COMSTR = "",
+            PANDOCCOM = command,
+            PANDOCCOMSTR = "",
 
         )
     env["BUILDERS"]["Pandoc"] = _builder
