@@ -93,40 +93,72 @@ def _detect(env):
             PandocNotFound, "Could not find Pandoc"
         )
 
+
 def _scanner(node, env, path, arg=None):
-    """Scan the sources files for image dependencies.
+    """ Attempt to scan the final target for images and bibliographies
 
     In Pandoc flavored MarkDown, the only "included" files are the
-    images.  We need to tell SCons about these, but we don't want to do
-    this by hand.  To do this, we directly use Pandoc's json output and
-    analyze the document tree for the images.  This logic is primarily
-    aimed at the MarkDown sources, but it should work with the other
-    plain text sources too.  However, this is not rigorously tested.
-    For LaTeX sources, you should really just use the SCons builder to
-    have the right thing done.
+    images and the bibliographies.  We need to tell SCons about these,
+    but we don't want to do this by hand.  To do this, we directly use
+    Pandoc's json output and analyze the document tree for the images
+    and the metadata for bibliographies.  We need to operate on the
+    filtered syntax tree so we can get the final filtered version.  The
+    logic should work on any input format Pandoc can translate into its
+    AST.
+
+    Note you must respect Pandoc's bibliography file rules.  The command
+    line arguments will override files specified in the YAML block of
+    the header file.
+
+    This logic is primarily aimed at the MarkDown sources, but it should
+    work with the other plain text sources too.  However, this is not
+    rigorously tested.  For LaTeX sources, you should really just use
+    the SCons builder to have the right thing done.
 
     """
     import panflute
     pandoc = _detect(env)
-    proc =  subprocess.Popen([pandoc, "-t", "json", str(node)],
-                             stdout=subprocess.PIPE)
+    # Grab the command SCons will run
+    cmd = env.subst_target_source("$PANDOCCOM").split()
+    for flag in ("-o", "--output"):
+        try:
+            cmd.remove(flag)
+        except ValueError:
+            # They specified the other flag
+            pass
+
+    # Add the sources to the command and specify JSON output
+    cmd.extend([str(x) for x in node.sources])
+    cmd.extend(["-t", "json"])
+    proc =  subprocess.Popen(cmd, stdout=subprocess.PIPE)
     doc = panflute.load(proc.stdout)
-    def walk(x):
-        if isinstance(x, panflute.Image):
-            return [x.url]
+
+    def walk(src):
+        """Walk the tree and find images and bibliographies
+        """
+        if isinstance(src, panflute.Image):
+            return [src.url]
         else:
-            tmp = [walk(y) for y in getattr(x, "content", [])]
+            tmp = [walk(y) for y in getattr(src, "content", [])]
             return [y for z in tmp for y in z if y]
 
-    deps = [x for x in walk(doc) if x]
+    images = [x for x in walk(doc) if x]
     root = os.path.dirname(str(node))
-    files = [env.File(os.path.join(root, x)) for x in deps]
+    _path = lambda x: env.File(os.path.join(root, x))
+    files = [_path(x) for x in images]
+
+    bibs = doc.metadata.content.get("bibliography", [])
+    if bibs:
+        files.extend([_path(x.text) for x
+                      in getattr(bibs, "content", [bibs])])
+
+    # print("{0!s}: {1!s}".format(node, [str(x) for x in files]))
     return files
 
 
 _builder = SCons.Builder.Builder(
         action = SCons.Action.Action("$PANDOCCOM", "$PANDOCCOMSTR"),
-        source_scanner = SCons.Scanner.Scanner(_scanner)
+        target_scanner = SCons.Scanner.Scanner(_target_scanner),
     )
 
 
