@@ -29,5 +29,6 @@ env.AppendUnique(BUILDERS={"image" : Builder(action=image)})
 srcs = ["example." + x for x in ("md", "yaml")]
 
 img = env.image("example.png", [])
-html = env.Pandoc("example.html", srcs)
+html = env.Pandoc("example.html", srcs,
+                  PANDOCFLAGS="--bibliography example-args.bib")
 
