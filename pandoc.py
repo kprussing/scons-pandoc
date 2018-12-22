@@ -158,7 +158,7 @@ def _scanner(node, env, path, arg=None):
 
 _builder = SCons.Builder.Builder(
         action = SCons.Action.Action("$PANDOCCOM", "$PANDOCCOMSTR"),
-        target_scanner = SCons.Scanner.Scanner(_target_scanner),
+        target_scanner = SCons.Scanner.Scanner(_scanner),
     )
 
 
