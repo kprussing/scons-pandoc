@@ -166,7 +166,7 @@ def generate(env):
     """Add the Builders and construction variables to the Environment
     """
     env["PANDOC"] = _detect(env)
-    command = "$PANDOC $PANDOCFLAGS -o ${TARGET.file} ${SOURCES.file}"
+    command = "$PANDOC $PANDOCFLAGS -o ${TARGET} ${SOURCES}"
     env.SetDefault(
             # Command line flags.
             PANDOCFLAGS = SCons.Util.CLVar("--standalone"),
