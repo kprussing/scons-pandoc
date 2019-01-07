@@ -55,6 +55,7 @@ import SCons.Builder
 import SCons.Scanner
 import SCons.Util
 
+import argparse
 import json
 import os
 import subprocess
@@ -151,6 +152,57 @@ def _scanner(node, env, path, arg=None):
     if bibs:
         files.extend([_path(x.text) for x
                       in getattr(bibs, "content", [bibs])])
+
+    # Scan the flags for all the filters and the files to include in the
+    # header.  But, we want to make sure the file is actually in the
+    # build tree and not simply an installed executable or file.  To do
+    # this, we map destinations in an :class:`argparser.ArgumentParser`
+    # to Pandoc flags.  We do not want to deal with searching all over
+    # creation so we do not deal with the data directory.
+    #
+    # .. note:: This does not deal with the --resource-path flag which
+    #           provides additional search paths for Pandoc.
+    arguments = {
+            "filter"            : ("-F", "--filter"),
+            "lua"               : ("--lua-filter",),
+            "metadata"          : ("--metadata-file",),
+            "abbreviations"     : ("--abbreviations",),
+            "template"          : ("--template",),
+            "highlight"         : ("--highlight-style",),
+            "syntax"            : ("--syntax-definition",),
+            "header"            : ("-H", "--include-in-header"),
+            "before"            : ("-B", "--include-before-body"),
+            "after"             : ("-A", "--include-after-body"),
+            "reference"         : ("--reference-doc",),
+            "epubcover"         : ("--epub-cover-image",),
+            "epubmeta"          : ("--epub-metadata",),
+            "epubfont"          : ("--epub-embed-font",),
+            "bibliography"      : ("--bibliography",),
+            "csl"               : ("--csl",),
+            "citeabbrev"        : ("--citation-abbreviations",),
+        }
+    parser = argparse.ArgumentParser()
+    for dest in arguments:
+        parser.add_argument(*arguments[dest], dest=dest,
+                            action="append", default=[])
+
+    args, _ = parser.parse_known_args(cmd)
+    for dest in arguments:
+        if dest == "template":
+            # We need to handle the templates as a special case because
+            # Pandoc will append the format as an extension if one is
+            # not provided.
+            for x in getattr(args, dest):
+                _, ext = os.path.splitext(x)
+                if x == "":
+                    x = x + "." + doc.format
+
+                if os.path.exists(x):
+                    files.append(env.File(x))
+
+        else:
+            files.extend([env.File(x) for x in getattr(args, dest)
+                          if os.path.exists(x)])
 
     # print("{0!s}: {1!s}".format(node, [str(x) for x in files]))
     return files
