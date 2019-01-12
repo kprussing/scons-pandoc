@@ -119,7 +119,7 @@ def _scanner(node, env, path, arg=None):
     """
     import panflute
     pandoc = _detect(env)
-    # Grab the command SCons will run
+    # Grab the base command SCons will run
     cmd = env.subst_target_source("$PANDOCCOM").split()
     for flag in ("-o", "--output"):
         try:
@@ -128,37 +128,13 @@ def _scanner(node, env, path, arg=None):
             # They specified the other flag
             pass
 
-    # Add the sources to the command and specify JSON output
-    cmd.extend([str(x) for x in node.sources])
-    cmd.extend(["-t", "json"])
-    proc =  subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    doc = panflute.load(proc.stdout)
-
-    def walk(src):
-        """Walk the tree and find images and bibliographies
-        """
-        if isinstance(src, panflute.Image):
-            return [src.url]
-        else:
-            tmp = [walk(y) for y in getattr(src, "content", [])]
-            return [y for z in tmp for y in z if y]
-
-    images = [x for x in walk(doc) if x]
-    root = os.path.dirname(str(node))
-    _path = lambda x: env.File(os.path.join(root, x))
-    files = [_path(x) for x in images]
-
-    bibs = doc.metadata.content.get("bibliography", [])
-    if bibs:
-        files.extend([_path(x.text) for x
-                      in getattr(bibs, "content", [bibs])])
-
-    # Scan the flags for all the filters and the files to include in the
-    # header.  But, we want to make sure the file is actually in the
-    # build tree and not simply an installed executable or file.  To do
-    # this, we map destinations in an :class:`argparser.ArgumentParser`
-    # to Pandoc flags.  We do not want to deal with searching all over
-    # creation so we do not deal with the data directory.
+    # Now parse the command line for the known arguments with files that
+    # are needed generate the final document.  But, we want to make sure
+    # the file is actually in the build tree and not simply an installed
+    # executable or file.  To do this, we map destinations in an
+    # :class:`argparser.ArgumentParser` to Pandoc flags.  We do not want
+    # to deal with searching all over creation so we do not deal with
+    # the data directory.
     #
     # .. note:: This does not deal with the --resource-path flag which
     #           provides additional search paths for Pandoc.
@@ -187,6 +163,7 @@ def _scanner(node, env, path, arg=None):
                             action="append", default=[])
 
     args, _ = parser.parse_known_args(cmd)
+    files = []
     for dest in arguments:
         if dest == "template":
             # We need to handle the templates as a special case because
@@ -203,6 +180,31 @@ def _scanner(node, env, path, arg=None):
         else:
             files.extend([env.File(x) for x in getattr(args, dest)
                           if os.path.exists(x)])
+
+    # Add the sources to the command and specify JSON output
+    cmd.extend([str(x) for x in node.sources])
+    cmd.extend(["-t", "json"])
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    doc = panflute.load(fid)
+
+    def walk(src):
+        """Walk the tree and find images and bibliographies
+        """
+        if isinstance(src, panflute.Image):
+            return [src.url]
+        else:
+            tmp = [walk(y) for y in getattr(src, "content", [])]
+            return [y for z in tmp for y in z if y]
+
+    images = [x for x in walk(doc) if x]
+    root = os.path.dirname(str(node))
+    _path = lambda x: env.File(os.path.join(root, x))
+    files.extend( [_path(x) for x in images] )
+
+    bibs = doc.metadata.content.get("bibliography", [])
+    if bibs:
+        files.extend([_path(x.text) for x
+                      in getattr(bibs, "content", [bibs])])
 
     # print("{0!s}: {1!s}".format(node, [str(x) for x in files]))
     return files
