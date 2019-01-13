@@ -187,8 +187,10 @@ def _scanner(node, env, path, arg=None):
 
     """
     import panflute
-    pandoc = _detect(env)
-    # Grab the base command SCons will run
+    logger = logging.getLogger(__name__ + ".scanner")
+    # Grab the base command SCons will run and remove the output flag.
+    # This does assume the user did not override the command variable
+    # and hard code the output.
     cmd = env.subst_target_source("$PANDOCCOM").split()
     for flag in ("-o", "--output"):
         try:
@@ -231,6 +233,12 @@ def _scanner(node, env, path, arg=None):
         parser.add_argument(*arguments[dest], dest=dest,
                             action="append", default=[])
 
+    # Add the target format in case it was specified as this overrides
+    # the output format.  We also need the data directory for finding
+    # installed filters.
+    parser.add_argument("-t", "--to")
+    parser.add_argument("--data-dir", dest="datadir")
+
     args, _ = parser.parse_known_args(cmd)
     files = []
     for dest in arguments:
@@ -238,6 +246,9 @@ def _scanner(node, env, path, arg=None):
             # We need to handle the templates as a special case because
             # Pandoc will append the format as an extension if one is
             # not provided.
+            #
+            # .. todo:: Scan the data directory if it was set by the
+            #           user.
             for x in getattr(args, dest):
                 _, ext = os.path.splitext(x)
                 if x == "":
@@ -250,12 +261,73 @@ def _scanner(node, env, path, arg=None):
             files.extend([env.File(x) for x in getattr(args, dest)
                           if os.path.exists(x)])
 
-    # Add the sources to the command and specify JSON output
-    cmd.extend([str(x) for x in node.sources])
-    cmd.extend(["-t", "json"])
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    doc = panflute.load(fid)
+    # Now we need to determine the files inside the document that will
+    # influence the output.  To do this, we need to analyze the tree
+    # Pandoc will write out after all of the filters have been run.  The
+    # best parser for a Pandoc document is Pandoc itself; however, we
+    # want to interrupt the processing before the Writer is called.
+    # Looking at the filter documentation, we can achieve this by
+    # calling Pandoc with the appropriate flags and piping the JSON
+    # output through each filter.  The output format is passed as an
+    # argument to each filter so we must replicate that behavior to
+    # ensure the syntax tree has the final files.
+    #
+    # If the user provided the ``--to`` flag (with possible extensions),
+    # that _is_ the output format.  Otherwise, we take the format from
+    # the file extension.  The only exception is the 'beamer' output.
+    if args.to and args.to != "beamer":
+        format = re.match("(\w+)[-+]?", args.to).group(1)
+    else:
+        _, format = os.path.splitext(str(node))
+        format = format[1:]
 
+    def run_command(cmd, proc=None):
+        """Helper function for running a command
+        """
+        logger = logging.getLogger(__name__+".scanner.run_command")
+        logger.debug("command: '{0}'".format(" ".join(cmd)))
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                stdin=proc.stdout if proc else None)
+        return proc
+
+    # We need to run each filter in order; however, we also need to
+    # run any Lua filters in their proper location.  We can do this
+    # by reading from the front of the command until we find a
+    # filter.  We consume the command until we find a filter and run
+    # each stage.  We start by processing the input files.
+    cmd_ = [cmd.pop(0), "--to", "json"] + \
+            [str(x) for x in node.sources]
+    proc = run_command(cmd_)
+    cmd_ = []
+    cmd0 = [_detect(env), "--from", "json", "--to", "json"]
+    while cmd:
+        # Grab the first item off the list
+        item = cmd.pop(0)
+        # Determine if it is a filter
+        match = re.match("(-F|--filter=?)(\w+)?", item)
+        if match:
+            # Grab the filter
+            filt = match.group(2) if match.group(2) else cmd.pop(0)
+            logger.debug("cmd : '{0}'".format(" ".join(cmd)))
+            logger.debug("item: '{0}'".format(item))
+            logger.debug("filt: '{0}'".format(filt))
+            logger.debug("cmd_: '{0}'".format(" ".join(cmd_)))
+
+            # First, deal with any intervening commands
+            proc = run_command(cmd0 + cmd_, proc)
+            # Now figure out the filter.
+            cmd_ = _find_filter(filt, args.datadir, env)
+            proc = run_command(cmd_ + [format], proc)
+            cmd_ = []
+        else:
+            # Otherwise, put it on the running command.
+            cmd_.append(item)
+
+    # Now process any arguments after the last filter
+    if cmd_:
+        proc = run_command(cmd0 + cmd_, proc)
+
+    doc = panflute.load(proc.stdout)
     def walk(src):
         """Walk the tree and find images and bibliographies
         """
@@ -266,10 +338,12 @@ def _scanner(node, env, path, arg=None):
             return [y for z in tmp for y in z if y]
 
     images = [x for x in walk(doc) if x]
+    logger.debug("images: {0}".format(images))
     root = os.path.dirname(str(node))
     _path = lambda x: env.File(os.path.join(root, x))
     files.extend( [_path(x) for x in images] )
 
+    # And, finally, check the metadata for a bibliography file
     bibs = doc.metadata.content.get("bibliography", [])
     if bibs:
         files.extend([_path(x.text) for x
