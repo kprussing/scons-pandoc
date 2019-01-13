@@ -199,6 +199,19 @@ def _scanner(node, env, path, arg=None):
             # They specified the other flag
             pass
 
+    # If the user provided the --from flag, we need to move it to the
+    # beginning of the command
+    newidx = 1
+    for idx, item in enumerate(cmd):
+        match = re.match("(-f|--from=?)([-+\w]*)?", item)
+        if match:
+            cmd[newidx:newidx] = [cmd.pop(idx)]
+            newidx += 1
+            if not match.group(2):
+                cmd[newidx:newidx] = [cmd.pop(idx+1)]
+                newidx += 1
+
+    logger.debug("initial command: '{0}'".format(" ".join(cmd)))
     # Now parse the command line for the known arguments with files that
     # are needed generate the final document.  But, we want to make sure
     # the file is actually in the build tree and not simply an installed
