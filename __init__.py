@@ -328,20 +328,47 @@ def _scanner(node, env, path, arg=None):
         proc = run_command(cmd0 + cmd_, proc)
 
     doc = panflute.load(proc.stdout)
-    def walk(src):
-        """Walk the tree and find images and bibliographies
-        """
-        if isinstance(src, panflute.Image):
-            return [src.url]
-        else:
-            tmp = [walk(y) for y in getattr(src, "content", [])]
-            return [y for z in tmp for y in z if y]
 
-    images = [x for x in walk(doc) if x]
-    logger.debug("images: {0}".format(images))
-    root = os.path.dirname(str(node))
-    _path = lambda x: env.File(os.path.join(root, x))
-    files.extend( [_path(x) for x in images] )
+    # For images, we only concern ourselves with outputs that are a
+    # final stage.  This includes formats such as 'docx', 'pptx',
+    # 'html', and 'epub'.  It excludes 'markdown' and 'latex'.  The
+    # rationale is these are not delivery formats and, therefore, still
+    # need to be processed as another stage in SCons.  That is when the
+    # scanning needs to be done.  We also exclude PDF because SCons has
+    # a better scanner built in. (And why would you want to use SCons if
+    # you just want to use Pandoc to go straight to PDF?)
+    skip = (
+            "asciidoc",
+            "commonmark",
+            "context",
+            "gfm",
+            "json",
+            "latex",
+            "markdown",
+            "markdown_mmd",
+            "markdown_phpextra",
+            "markdown_strict",
+            "native",
+            "org",
+            "plain",
+            "rst",
+            "tex",
+        )
+    if format not in skip:
+        def walk(src):
+            """Walk the tree and find images and bibliographies
+            """
+            if isinstance(src, panflute.Image):
+                return [src.url]
+            else:
+                tmp = [walk(y) for y in getattr(src, "content", [])]
+                return [y for z in tmp for y in z if y]
+
+        images = [x for x in walk(doc) if x]
+        logger.debug("images: {0}".format(images))
+        root = os.path.dirname(str(node))
+        _path = lambda x: env.File(os.path.join(root, x))
+        files.extend( [_path(x) for x in images] )
 
     # And, finally, check the metadata for a bibliography file
     bibs = doc.metadata.content.get("bibliography", [])
