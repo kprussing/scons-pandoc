@@ -13,7 +13,7 @@ method.
 """
 
 #
-# Copyright (c) 2016-2018, Keith F. Prussing
+# Copyright (c) 2016-2019, Keith F. Prussing
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
