@@ -59,6 +59,7 @@ import argparse
 import json
 import logging
 import os
+import re
 import subprocess
 
 _debug = False
@@ -83,6 +84,61 @@ class PanfluteNotFound(ToolPandocWarning):
     pass
 
 SCons.Warnings.enableWarningClass(ToolPandocWarning)
+
+def _find_filter(filt, datadir, env):
+    """Utility function to determine the Pandoc filter command
+
+    To process the final filter, we need to locate it and determine if
+    we need to pass it through an interpreter.  According to the User's
+    Guide, the search order is: full or relative path to the filter, in
+    the $DATADIR/filters directory, and finally in the $PATH.  If the
+    datadir provided is None, we check the ``pandoc --version`` output
+    for the default.  The ``env`` is the SCons construction Environment.
+
+    Returns
+    -------
+
+    command: list
+        The command to execute the filter without the format
+
+    """
+    if not datadir:
+        output = subprocess.check_output([env["PANDOC"], "--version"])
+        for line in output.split(b"\n"):
+            pattern = b"\s*Default user data directory:\s*(.*)"
+            match = re.match(pattern, line)
+            if match:
+                datadir = match.group(1)
+                break
+
+    if os.path.exists(filt):
+        cmd = [filt]
+    elif datadir and os.path.exists(os.path.join(datadir, filt)):
+        cmd = [os.path.join(datadir, "filters", filt)]
+    else:
+        # The filter must be executable and on the PATH.  Therefore, we
+        # can just let it error in the usual wan if it is not on the
+        # PATH.
+        return [filt]
+
+    # Now to check if the filter is executable or needs an interpreter.
+    if os.access(cmd[0], os.X_OK):
+        return cmd
+
+    # We define the interpreters the same way Pandoc does based on the
+    # file extension.  Translated from Pandoc.Filter.JSON
+    interpreter = {
+            ".py"   : ["python"],
+            ".hs"   : ["runhaskell"],
+            ".pl"   : ["perl"],
+            ".rb"   : ["ruby"],
+            ".php"  : ["php"],
+            ".js"   : ["node"],
+            ".r"    : ["Rscript"],
+        }
+    _, ext = os.path.splitext(filt)
+    return interpreter.get(ext, []) + cmd
+
 
 def _detect(env):
     """Try to find Pandoc and :package:`panflute`
