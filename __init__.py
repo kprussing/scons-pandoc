@@ -308,9 +308,7 @@ def _scanner(node, env, path, arg=None):
     # by reading from the front of the command until we find a
     # filter.  We consume the command until we find a filter and run
     # each stage.  We start by processing the input files.
-    cmd_ = [cmd.pop(0), "--to", "json"] + \
-            [str(x) for x in node.sources]
-    proc = run_command(cmd_)
+    proc = None
     cmd_ = []
     cmd0 = [_detect(env), "--from", "json", "--to", "json"]
     while cmd:
@@ -327,7 +325,15 @@ def _scanner(node, env, path, arg=None):
             logger.debug("cmd_: '{0}'".format(" ".join(cmd_)))
 
             # First, deal with any intervening commands
-            proc = run_command(cmd0 + cmd_, proc)
+            if proc:
+                proc = run_command(cmd0 + cmd_, proc)
+            else:
+                # If this is the first filter, we need to process the
+                # input files.
+                cmd_.extend(["--to", "json"])
+                cmd_.extend([str(x) for x in node.sources])
+                proc = run_command(cmd_)
+
             # Now figure out the filter.
             cmd_ = _find_filter(filt, args.datadir, env)
             proc = run_command(cmd_ + [format], proc)
@@ -338,7 +344,12 @@ def _scanner(node, env, path, arg=None):
 
     # Now process any arguments after the last filter
     if cmd_:
-        proc = run_command(cmd0 + cmd_, proc)
+        if proc:
+            proc = run_command(cmd0 + cmd_, proc)
+        else:
+            # If we have no filters, process the sources.
+            cmd_.extend([str(x) for x in node.sources])
+            proc = run_command(cmd_)
 
     doc = panflute.load(proc.stdout)
 
