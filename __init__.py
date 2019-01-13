@@ -57,8 +57,21 @@ import SCons.Util
 
 import argparse
 import json
+import logging
 import os
 import subprocess
+
+_debug = False
+if _debug:
+    _logger = logging.getLogger(__name__)
+    _logger.setLevel(logging.DEBUG)
+    _handler = logging.StreamHandler()
+    _handler.setLevel(logging.DEBUG)
+    _formatter = logging.Formatter("%(name)s:%(levelname)s:%(message)s")
+    _handler.setFormatter(_formatter)
+    _logger.addHandler(_handler)
+else:
+    logging.getLogger(__name__).addHandler( logging.NullHandler() )
 
 class ToolPandocWarning(SCons.Warnings.Warning):
     pass
@@ -206,7 +219,7 @@ def _scanner(node, env, path, arg=None):
         files.extend([_path(x.text) for x
                       in getattr(bibs, "content", [bibs])])
 
-    # print("{0!s}: {1!s}".format(node, [str(x) for x in files]))
+    logger.debug("{0!s}: {1!s}".format(node, [str(x) for x in files]))
     return files
 
 
