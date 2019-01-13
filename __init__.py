@@ -329,6 +329,10 @@ def _scanner(node, env, path, arg=None):
 
     doc = panflute.load(proc.stdout)
 
+    # A helper for getting the right path
+    root = os.path.dirname(str(node))
+    _path = lambda x: env.File(os.path.join(root, x))
+
     # For images, we only concern ourselves with outputs that are a
     # final stage.  This includes formats such as 'docx', 'pptx',
     # 'html', and 'epub'.  It excludes 'markdown' and 'latex'.  The
@@ -366,8 +370,6 @@ def _scanner(node, env, path, arg=None):
 
         images = [x for x in walk(doc) if x]
         logger.debug("images: {0}".format(images))
-        root = os.path.dirname(str(node))
-        _path = lambda x: env.File(os.path.join(root, x))
         files.extend( [_path(x) for x in images] )
 
     # And, finally, check the metadata for a bibliography file
