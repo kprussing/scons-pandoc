@@ -5,12 +5,22 @@ Basics
 ------
 
 This goal of this project is to add support for Pandoc_ to SCons_
-through the tool plugin system.  Once installed, to use the tool simply
-add
+through the tool plugin system.
+
+Usage
+-----
+
+Once installed, to use the tool simply add
 
     env = Environment(tools=["pandoc"])
 
-to your ``SConstruct``.
+to your ``SConstruct``.  Then, you specify a document via
+
+   html = env.Pandoc("example.html", ["page1.md", "page2.md", "head.yaml"])
+
+You can use the ``PANDOCFLAGS`` environment variable to add additional
+flags to pass to Pandoc_ like filters, bibliography files, or even
+metadata flags.
 
 Installation
 ------------
