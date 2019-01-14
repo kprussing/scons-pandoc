@@ -1,6 +1,4 @@
 # coding=utf-8
-from __future__ import unicode_literals, print_function
-
 __doc__="""SCons.Tool.pandoc
 
 The Tool specific initialization for the Pandoc document conversion
