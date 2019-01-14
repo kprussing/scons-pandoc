@@ -346,6 +346,7 @@ def _scanner(node, env, path, arg=None):
             proc = run_command(cmd0 + cmd_, proc)
         else:
             # If we have no filters, process the sources.
+            cmd_.extend(["--to", "json"])
             cmd_.extend([str(x) for x in node.sources])
             proc = run_command(cmd_)
 
