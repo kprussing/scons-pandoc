@@ -313,7 +313,7 @@ def _scanner(node, env, path, arg=None):
         # Grab the first item off the list
         item = cmd.pop(0)
         # Determine if it is a filter
-        match = re.match("(-F|--filter=?)(\w+)?", item)
+        match = re.match("(-F|--filter=?)([-\w]+)?", item)
         if match:
             # Grab the filter
             filt = match.group(2) if match.group(2) else cmd.pop(0)
