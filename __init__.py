@@ -331,7 +331,7 @@ def _scanner(node, env, path, arg=None):
                 # If this is the first filter, we need to process the
                 # input files.
                 cmd_.extend(["--to", "json"])
-                cmd_.extend([x.path for x in node.sources])
+                cmd_.extend(sources)
                 proc = run_command(cmd_)
 
             # Now figure out the filter.
@@ -349,7 +349,7 @@ def _scanner(node, env, path, arg=None):
         else:
             # If we have no filters, process the sources.
             cmd_.extend(["--to", "json"])
-            cmd_.extend([x.path for x in node.sources])
+            cmd_.extend(sources)
             proc = run_command(cmd_)
 
     doc = panflute.load(proc.stdout) if proc else None
