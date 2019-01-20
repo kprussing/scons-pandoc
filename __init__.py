@@ -58,6 +58,7 @@ import json
 import logging
 import os
 import re
+import shlex
 import subprocess
 
 _debug = False
@@ -189,7 +190,7 @@ def _scanner(node, env, path, arg=None):
     # Grab the base command SCons will run and remove the output flag.
     # This does assume the user did not override the command variable
     # and hard code the output.
-    cmd = env.subst_target_source("$PANDOCCOM").split()
+    cmd = shlex.split(env.subst_target_source("$PANDOCCOM"))
     for flag in ("-o", "--output"):
         try:
             cmd.remove(flag)
