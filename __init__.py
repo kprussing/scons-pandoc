@@ -309,7 +309,8 @@ def _scanner(node, env, path, arg=None):
     proc = None
     cmd_ = []
     cmd0 = [_detect(env), "--from", "json", "--to", "json"]
-    while cmd:
+    sources = [x.path for x in node.sources if os.path.exists(x.path)]
+    while cmd and sources:
         # Grab the first item off the list
         item = cmd.pop(0)
         # Determine if it is a filter
@@ -329,7 +330,7 @@ def _scanner(node, env, path, arg=None):
                 # If this is the first filter, we need to process the
                 # input files.
                 cmd_.extend(["--to", "json"])
-                cmd_.extend([str(x) for x in node.sources])
+                cmd_.extend([x.path for x in node.sources])
                 proc = run_command(cmd_)
 
             # Now figure out the filter.
@@ -347,10 +348,10 @@ def _scanner(node, env, path, arg=None):
         else:
             # If we have no filters, process the sources.
             cmd_.extend(["--to", "json"])
-            cmd_.extend([str(x) for x in node.sources])
+            cmd_.extend([x.path for x in node.sources])
             proc = run_command(cmd_)
 
-    doc = panflute.load(proc.stdout)
+    doc = panflute.load(proc.stdout) if proc else None
 
     # A helper for getting the right path
     root = os.path.dirname(str(node))
@@ -396,10 +397,11 @@ def _scanner(node, env, path, arg=None):
         files.extend( [_path(x) for x in images] )
 
     # And, finally, check the metadata for a bibliography file
-    bibs = doc.metadata.content.get("bibliography", [])
-    if bibs:
-        files.extend([_path(x.text) for x
-                      in getattr(bibs, "content", [bibs])])
+    if doc:
+        bibs = doc.metadata.content.get("bibliography", [])
+        if bibs:
+            files.extend([_path(x.text) for x
+                          in getattr(bibs, "content", [bibs])])
 
     logger.debug("{0!s}: {1!s}".format(node, [str(x) for x in files]))
     return files
