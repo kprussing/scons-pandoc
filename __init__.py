@@ -232,6 +232,7 @@ def _scanner(node, env, path, arg=None):
             "header"            : ("-H", "--include-in-header"),
             "before"            : ("-B", "--include-before-body"),
             "after"             : ("-A", "--include-after-body"),
+            "css"               : ("-c", "--css"),
             "reference"         : ("--reference-doc",),
             "epubcover"         : ("--epub-cover-image",),
             "epubmeta"          : ("--epub-metadata",),
