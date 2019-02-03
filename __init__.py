@@ -272,8 +272,12 @@ def _scanner(node, env, path, arg=None):
     # If the user provided the ``--to`` flag (with possible extensions),
     # that _is_ the output format.  Otherwise, we take the format from
     # the file extension.  The only exception is the 'beamer' output.
-    if args.to and args.to != "beamer":
-        format = re.match("(\w+)[-+]?", args.to).group(1)
+    if args.to:
+        if args.to == "beamer":
+            format = "latex"
+        else:
+            format = re.match("(\w+)[-+]?", args.to).group(1)
+
     else:
         _, format = os.path.splitext(str(node))
         format = format[1:]
