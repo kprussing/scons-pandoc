@@ -226,7 +226,6 @@ def _scanner(node, env, path, arg=None):
             "lua"               : ("--lua-filter",),
             "metadata"          : ("--metadata-file",),
             "abbreviations"     : ("--abbreviations",),
-            "template"          : ("--template",),
             "highlight"         : ("--highlight-style",),
             "syntax"            : ("--syntax-definition",),
             "header"            : ("-H", "--include-in-header"),
@@ -251,28 +250,13 @@ def _scanner(node, env, path, arg=None):
     # installed filters.
     parser.add_argument("-t", "--to")
     parser.add_argument("--data-dir", dest="datadir")
+    parser.add_argument("--template", default="default")
 
     args, _ = parser.parse_known_args(cmd)
     files = []
     for dest in arguments:
-        if dest == "template":
-            # We need to handle the templates as a special case because
-            # Pandoc will append the format as an extension if one is
-            # not provided.
-            #
-            # .. todo:: Scan the data directory if it was set by the
-            #           user.
-            for x in getattr(args, dest):
-                _, ext = os.path.splitext(x)
-                if x == "":
-                    x = x + "." + doc.format
-
-                if os.path.exists(x):
-                    files.append(env.File(x))
-
-        else:
-            files.extend([env.File(x) for x in getattr(args, dest)
-                          if os.path.exists(x)])
+        files.extend([env.File(x) for x in getattr(args, dest)
+                      if os.path.exists(x)])
 
     # Now we need to determine the files inside the document that will
     # influence the output.  To do this, we need to analyze the tree
@@ -293,6 +277,24 @@ def _scanner(node, env, path, arg=None):
     else:
         _, format = os.path.splitext(str(node))
         format = format[1:]
+
+    # Now that we have the format, we can figure out if the template was
+    # defined and inside the project.  First, we need the root of the
+    # build and the template.
+    rootdir = env.Dir("#").path
+    template = args.template
+    # Add the extension if needed.
+    _, ext = os.path.splitext(template)
+    if ext == "":
+        template = template + "." + format
+
+    # First, check that the file exists or is findable in the data
+    # directory.
+    if not os.path.exists(template):
+        if args.datadir:
+            template = os.path.join(args.datadir, "templates", template)
+
+    files.append(env.File(template))
 
     def run_command(cmd, proc=None):
         """Helper function for running a command
