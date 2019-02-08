@@ -321,6 +321,14 @@ def _scanner(node, env, path, arg=None):
     while cmd and sources:
         # Grab the first item off the list
         item = cmd.pop(0)
+        # Is this a 'to' flag?
+        match = re.match("(-T|--to=?)([-+\w+]+)?", item)
+        if match:
+            if not match.group(2):
+                cmd.pop(0)
+
+            continue
+
         # Determine if it is a filter
         match = re.match("(-F|--filter=?)([-\w/.]+)?", item)
         if match:
