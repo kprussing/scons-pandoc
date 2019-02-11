@@ -416,10 +416,11 @@ def _scanner(node, env, path, arg=None):
 
     # And, finally, check the metadata for a bibliography file
     if doc:
-        bibs = doc.metadata.content.get("bibliography", [])
-        if bibs:
-            files.extend([_path(x.text) for x
-                          in getattr(bibs, "content", [bibs])])
+        if not args.bibliography:
+            bibs = doc.metadata.content.get("bibliography", [])
+            if bibs:
+                files.extend([_path(x.text) for x
+                              in getattr(bibs, "content", [bibs])])
 
     logger.debug("{0!s}: {1!s}".format(node, [str(x) for x in files]))
     return files
