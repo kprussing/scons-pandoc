@@ -317,8 +317,8 @@ def _scanner(node, env, path, arg=None):
     proc = None
     cmd_ = []
     cmd0 = [_detect(env), "--from", "json", "--to", "json"] \
-            + ["--data-dir={0}".format(args.datadir)] if args.datadir \
-                                                      else []
+            + (["--data-dir={0}".format(args.datadir)] if args.datadir \
+                                                       else [])
     sources = [x.path for x in node.sources if os.path.exists(x.path)]
     while cmd and sources:
         # Grab the first item off the list
