@@ -298,7 +298,8 @@ def _scanner(node, env, path, arg=None):
         if args.datadir:
             template = os.path.join(args.datadir, "templates", template)
 
-    files.append(env.File(template))
+    if os.path.exists(template):
+        files.append(env.File(template))
 
     def run_command(cmd, proc=None):
         """Helper function for running a command
