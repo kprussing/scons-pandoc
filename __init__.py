@@ -102,9 +102,10 @@ def _find_filter(filt, datadir, env):
 
     """
     if not datadir:
-        output = subprocess.check_output([env["PANDOC"], "--version"])
-        for line in output.split(b"\n"):
-            pattern = b"\s*Default user data directory:\s*(.*)"
+        output = subprocess.check_output([env["PANDOC"], "--version"],
+                                         universal_newlines=True)
+        for line in output.split("\n"):
+            pattern = "\s*Default user data directory:\s*(.*)"
             match = re.match(pattern, line)
             if match:
                 datadir = match.group(1)
