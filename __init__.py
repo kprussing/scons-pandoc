@@ -299,7 +299,7 @@ def _scanner(node, env, path, arg=None):
         if args.datadir:
             template = os.path.join(args.datadir, "templates", template)
 
-    if os.path.exists(template):
+    if os.path.exists(template) and format not in ("docx", "pptx"):
         files.append(env.File(template))
 
     def run_command(cmd, proc=None):
