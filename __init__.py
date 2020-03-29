@@ -344,14 +344,15 @@ def _scanner(node, env, path, arg=None):
             logger.debug("cmd_: '{0}'".format(" ".join(cmd_)))
 
             # First, deal with any intervening commands
-            if proc:
-                proc = run_command(cmd0 + cmd_, proc)
-            else:
-                # If this is the first filter, we need to process the
-                # input files.
-                cmd_.extend(["--to", "json"])
-                cmd_.extend(sources)
-                proc = run_command(cmd_)
+            if cmd_:
+                if proc:
+                    proc = run_command(cmd0 + cmd_, proc)
+                else:
+                    # If this is the first filter, we need to process the
+                    # input files.
+                    cmd_.extend(["--to", "json"])
+                    cmd_.extend(sources)
+                    proc = run_command(cmd_)
 
             # Now figure out the filter.
             cmd_ = _find_filter(filt, args.datadir, env)
