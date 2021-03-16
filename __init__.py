@@ -374,9 +374,13 @@ def _scanner(node, env, path, arg=None):
 
     doc = panflute.load(proc.stdout) if proc else None
 
-    # A helper for getting the right path
-    root = os.path.dirname(str(node))
-    _path = lambda x: env.File(os.path.join(root, x))
+    def _path(x):
+        """A helper for getting the path right"""
+        root = os.path.dirname(str(node))
+        if os.path.commonprefix([root, x]) == root:
+            return env.File(x)
+        else:
+            return env.File(os.path.join(root, x))
 
     # For images, we only concern ourselves with outputs that are a
     # final stage.  This includes formats such as 'docx', 'pptx',
