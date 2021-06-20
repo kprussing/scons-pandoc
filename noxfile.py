@@ -12,7 +12,7 @@ def flake8(session):
     session.run("flake8", "__init__.py", "noxfile.py")
 
 
-@nox.session(python=["3.5", "3.6", "3.7", "3.8", "3.9"],
+@nox.session(python=["3.6", "3.7", "3.8", "3.9"],
              venv_backend="conda")
 def test(session):
     session.install("scons", "panflute")

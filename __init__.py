@@ -21,6 +21,12 @@ import os
 import re
 import shlex
 import subprocess
+import sys
+
+if sys.version_info < (3, 6):
+    raise RuntimeError(
+        "Panflute (and thus this Tool) does not support Python < 3.6"
+    )
 
 #
 # Copyright (c) 2016-2019, Keith F. Prussing
