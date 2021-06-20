@@ -73,7 +73,7 @@ else:
     logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 
-class ToolPandocWarning(SCons.Warnings.Warning):
+class ToolPandocWarning(SCons.Warnings.SConsWarning):
     pass
 
 
