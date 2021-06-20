@@ -1,5 +1,5 @@
 # coding=utf-8
-__doc__="""SCons.Tool.pandoc
+__doc__ = """SCons.Tool.pandoc
 
 The Tool specific initialization for the Pandoc document conversion
 command line tool.
@@ -9,6 +9,18 @@ will usually be imported through the generic SCons.Tool.Tool() selection
 method.
 
 """
+
+import SCons.Action
+import SCons.Builder
+import SCons.Scanner
+import SCons.Util
+
+import argparse
+import logging
+import os
+import re
+import shlex
+import subprocess
 
 #
 # Copyright (c) 2016-2019, Keith F. Prussing
@@ -48,19 +60,6 @@ method.
 # .. ToolsForFools: https://bitbucket.org/scons/scons/wiki/ToolsForFools
 #
 
-import SCons.Action
-import SCons.Builder
-import SCons.Scanner
-import SCons.Util
-
-import argparse
-import json
-import logging
-import os
-import re
-import shlex
-import subprocess
-
 _debug = False
 if _debug:
     _logger = logging.getLogger(__name__)
@@ -71,18 +70,23 @@ if _debug:
     _handler.setFormatter(_formatter)
     _logger.addHandler(_handler)
 else:
-    logging.getLogger(__name__).addHandler( logging.NullHandler() )
+    logging.getLogger(__name__).addHandler(logging.NullHandler())
+
 
 class ToolPandocWarning(SCons.Warnings.Warning):
     pass
 
+
 class PandocNotFound(ToolPandocWarning):
     pass
+
 
 class PanfluteNotFound(ToolPandocWarning):
     pass
 
+
 SCons.Warnings.enableWarningClass(ToolPandocWarning)
+
 
 def _find_filter(filt, datadir, env):
     """Utility function to determine the Pandoc filter command
@@ -105,7 +109,7 @@ def _find_filter(filt, datadir, env):
         output = subprocess.check_output([env["PANDOC"], "--version"],
                                          universal_newlines=True)
         for line in output.split("\n"):
-            pattern = "\s*Default user data directory:\s*(.*)"
+            pattern = r"\s*Default user data directory:\s*(.*)"
             match = re.match(pattern, line)
             if match:
                 datadir = match.group(1)
@@ -128,13 +132,13 @@ def _find_filter(filt, datadir, env):
     # We define the interpreters the same way Pandoc does based on the
     # file extension.  Translated from Pandoc.Filter.JSON
     interpreter = {
-            ".py"   : ["python"],
-            ".hs"   : ["runhaskell"],
-            ".pl"   : ["perl"],
-            ".rb"   : ["ruby"],
-            ".php"  : ["php"],
-            ".js"   : ["node"],
-            ".r"    : ["Rscript"],
+            ".py": ["python"],
+            ".hs": ["runhaskell"],
+            ".pl": ["perl"],
+            ".rb": ["ruby"],
+            ".php": ["php"],
+            ".js": ["node"],
+            ".r": ["Rscript"],
         }
     _, ext = os.path.splitext(filt)
     return interpreter.get(ext, []) + cmd
@@ -149,7 +153,8 @@ def _detect(env):
         pass
 
     try:
-        import panflute
+        # Just make sure it's available for the scanner
+        import panflute  # noqa: F401
     except ImportError:
         raise SCons.Errors.StopError(
                 PanfluteNotFound, "Could not find :package:`panflute`"
@@ -203,7 +208,7 @@ def _scanner(node, env, path, arg=None):
     # beginning of the command
     newidx = 1
     for idx, item in enumerate(cmd):
-        match = re.match("(-f|--from=?)([-+\w]*)?", item)
+        match = re.match(r"(-f|--from=?)([-+\w]*)?", item)
         if match:
             cmd[newidx:newidx] = [cmd.pop(idx)]
             newidx += 1
@@ -223,23 +228,23 @@ def _scanner(node, env, path, arg=None):
     # .. note:: This does not deal with the --resource-path flag which
     #           provides additional search paths for Pandoc.
     arguments = {
-            "filter"            : ("-F", "--filter"),
-            "lua"               : ("--lua-filter",),
-            "metadata"          : ("--metadata-file",),
-            "abbreviations"     : ("--abbreviations",),
-            "highlight"         : ("--highlight-style",),
-            "syntax"            : ("--syntax-definition",),
-            "header"            : ("-H", "--include-in-header"),
-            "before"            : ("-B", "--include-before-body"),
-            "after"             : ("-A", "--include-after-body"),
-            "css"               : ("-c", "--css"),
-            "reference"         : ("--reference-doc",),
-            "epubcover"         : ("--epub-cover-image",),
-            "epubmeta"          : ("--epub-metadata",),
-            "epubfont"          : ("--epub-embed-font",),
-            "bibliography"      : ("--bibliography",),
-            "csl"               : ("--csl",),
-            "citeabbrev"        : ("--citation-abbreviations",),
+            "filter": ("-F", "--filter"),
+            "lua": ("--lua-filter",),
+            "metadata": ("--metadata-file",),
+            "abbreviations": ("--abbreviations",),
+            "highlight": ("--highlight-style",),
+            "syntax": ("--syntax-definition",),
+            "header": ("-H", "--include-in-header"),
+            "before": ("-B", "--include-before-body"),
+            "after": ("-A", "--include-after-body"),
+            "css": ("-c", "--css"),
+            "reference": ("--reference-doc",),
+            "epubcover": ("--epub-cover-image",),
+            "epubmeta": ("--epub-metadata",),
+            "epubfont": ("--epub-embed-font",),
+            "bibliography": ("--bibliography",),
+            "csl": ("--csl",),
+            "citeabbrev": ("--citation-abbreviations",),
         }
     parser = argparse.ArgumentParser()
     for dest in arguments:
@@ -277,7 +282,7 @@ def _scanner(node, env, path, arg=None):
         if args.to == "beamer":
             format = "latex"
         else:
-            format = re.match("(\w+)[-+]?", args.to).group(1)
+            format = re.match(r"(\w+)[-+]?", args.to).group(1)
 
     else:
         _, format = os.path.splitext(str(node))
@@ -286,7 +291,6 @@ def _scanner(node, env, path, arg=None):
     # Now that we have the format, we can figure out if the template was
     # defined and inside the project.  First, we need the root of the
     # build and the template.
-    rootdir = env.Dir("#").path
     template = args.template
     # Add the extension if needed.
     _, ext = os.path.splitext(template)
@@ -318,15 +322,15 @@ def _scanner(node, env, path, arg=None):
     # each stage.  We start by processing the input files.
     proc = None
     cmd_ = []
-    cmd0 = [_detect(env), "--from", "json", "--to", "json"] \
-            + (["--data-dir={0}".format(args.datadir)] if args.datadir \
-                                                       else [])
+    cmd0 = [_detect(env), "--from", "json", "--to", "json"] + (
+        ["--data-dir={0}".format(args.datadir)] if args.datadir else []
+    )
     sources = [x.path for x in node.sources if os.path.exists(x.path)]
     while cmd and sources:
         # Grab the first item off the list
         item = cmd.pop(0)
         # Is this a 'to' flag?
-        match = re.match("(-T|--to=?)([-+\w+]+)?", item)
+        match = re.match(r"(-T|--to=?)([-+\w+]+)?", item)
         if match:
             if not match.group(2):
                 cmd.pop(0)
@@ -334,7 +338,7 @@ def _scanner(node, env, path, arg=None):
             continue
 
         # Determine if it is a filter
-        match = re.match("(-F|--filter=?)([-\w/.]+)?", item)
+        match = re.match(r"(-F|--filter=?)([-\w/.]+)?", item)
         if match:
             # Grab the filter
             filt = match.group(2) if match.group(2) else cmd.pop(0)
@@ -419,7 +423,7 @@ def _scanner(node, env, path, arg=None):
 
         images = [x for x in walk(doc) if x]
         logger.debug("images: {0}".format(images))
-        files.extend( [_path(x) for x in images] )
+        files.extend([_path(x) for x in images])
 
     # And, finally, check the metadata for a bibliography file
     if doc:
@@ -434,8 +438,8 @@ def _scanner(node, env, path, arg=None):
 
 
 _builder = SCons.Builder.Builder(
-        action = SCons.Action.Action("$PANDOCCOM", "$PANDOCCOMSTR"),
-        target_scanner = SCons.Scanner.Scanner(_scanner),
+        action=SCons.Action.Action("$PANDOCCOM", "$PANDOCCOMSTR"),
+        target_scanner=SCons.Scanner.Scanner(_scanner),
     )
 
 
@@ -446,11 +450,11 @@ def generate(env):
     command = "$PANDOC $PANDOCFLAGS -o ${TARGET} ${SOURCES}"
     env.SetDefault(
             # Command line flags.
-            PANDOCFLAGS = SCons.Util.CLVar("--standalone"),
+            PANDOCFLAGS=SCons.Util.CLVar("--standalone"),
 
             # Commands.
-            PANDOCCOM = command,
-            PANDOCCOMSTR = "",
+            PANDOCCOM=command,
+            PANDOCCOMSTR="",
 
         )
     env["BUILDERS"]["Pandoc"] = _builder
@@ -459,4 +463,3 @@ def generate(env):
 
 def exists(env):
     return _detect(env)
-
