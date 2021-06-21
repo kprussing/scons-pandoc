@@ -14,6 +14,10 @@ import SCons.Action
 import SCons.Builder
 import SCons.Scanner
 import SCons.Util
+try:
+    from SCons.Warnings import SConsWarning as SConsWarning
+except ImportError:
+    from SCons.Warnings import Warning as SConsWarning
 
 import argparse
 import logging
@@ -79,7 +83,7 @@ else:
     logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 
-class ToolPandocWarning(SCons.Warnings.SConsWarning):
+class ToolPandocWarning(SConsWarning):
     pass
 
 
