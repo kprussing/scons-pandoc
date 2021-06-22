@@ -22,16 +22,13 @@ def flake8(session):
     ],
 )
 def test(session, python, scons):
-    session.install(f"scons=={scons}", "panflute>=2.1")
+    session.install(f"scons=={scons}", "panflute>=2.0")
     session.conda_install("pandoc")
+    session.install(".")
     # Document building
     session.install("numpy", "matplotlib")
     root = pathlib.Path(__file__).parent
     dest = pathlib.Path(session.bin).parent
-
-    tooldir = dest / "site_scons" / "site_tools"
-    tooldir.mkdir(parents=True, exist_ok=True)
-    shutil.copy("__init__.py", tooldir / "pandoc.py")
 
     for src in root.joinpath("example").glob("*"):
         if src.suffix in (".html", ".png"):

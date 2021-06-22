@@ -1,0 +1,4 @@
+include __init__.py noxfile.py
+graft example
+
+global-exclude .DS_Store *.py[cod] __pycache__ .sconsign.dblite

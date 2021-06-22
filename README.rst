@@ -48,18 +48,21 @@ metadata flags.
 Installation
 ------------
 
-To install, simply copy the top of this project to
-``site_scons/site_tools`` in your project directory, or you can place it
-in the `appropriate location`_ for your system.  For more details, check
-the `SCons user's guide`_.  This tool requires Pandoc_ (obviously) and
-panflute_.
+To install using pip, clone this repository and run
 
-Alternatively, you can add this project as a submodule to your git
-project using
+    pip install .
 
-    git submodule add <url> site_scons/site_tools/pandoc
+.. note:: This will install directly to the SCons file structure which
+   violates the "don't install into someone else's namespace" rule, but
+   it works until an official namespace is established by SCons.  This
+   does mean installing in editable mode (``pip install -e .``) does not
+   work.
 
-where ``<url>`` is the current URL of the project.
+Alternatively, you can simply copy this directory or
+``SCons/Tool/pandoc`` to ``site_scons/site_tools`` in your project
+directory, or you can place it in the `appropriate location`_ for your
+system.  For more details, check the `SCons user's guide`_.  This tool
+requires Pandoc_ (obviously) 2.11 or newer and panflute_ 2.0 or newer.
 
 .. _SCons: http://www.scons.org
 .. _`appropriate location`: https://github.com/SCons/scons/wiki/ToolsIndex#Install_and_usage
