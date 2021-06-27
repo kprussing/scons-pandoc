@@ -9,7 +9,7 @@ import nox
 def flake8(session):
     """Run flake8"""
     session.install("flake8")
-    session.run("flake8", "__init__.py", "noxfile.py")
+    session.run("flake8", "sconscontrib", "noxfile.py")
 
 
 @nox.session(venv_backend="conda")
