@@ -37,7 +37,7 @@ def test(session, python, scons):
         shutil.copy(src, dest)
 
     session.chdir(dest)
-    session.run("scons", external=False)
+    session.run("scons", "--no-site-dir", external=False)
     assert filecmp.cmp(root / "example" / "example.html",
                        dest / "example.html",
                        shallow=False)
