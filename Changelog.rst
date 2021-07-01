@@ -10,6 +10,7 @@ Unreleased_
 Fixed
 ^^^^^
 
+-   Corrected version restrictions on Pandoc+panflute
 -   Installation details requiring SCons 4 or newer for pip
 
 1.0.0_ 2021-06-21

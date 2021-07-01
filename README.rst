@@ -63,10 +63,16 @@ Alternatively, you can simply copy this directory or
 ``SCons/Tool/pandoc`` to ``site_scons/site_tools`` in your project
 directory, or you can place it in the `appropriate location`_ for your
 system.  For more details, check the `SCons user's guide`_.  This tool
-requires Pandoc_ (obviously) 2.11 or newer and panflute_ 2.0 or newer.
+requires Pandoc_ (obviously) 2.11 or newer with panflute_ 2.0 or newer
+*or* Pandoc 2.7 through 2.9 with panflute pre 2.0.
+
+.. note:: Pandoc 2.10 is not supported because it introduced a breaking
+   API change that is not supported by panflute.  The versions supported
+   by this tool are those `supported by panflute`_.
 
 .. _SCons: http://www.scons.org
 .. _`appropriate location`: https://github.com/SCons/scons/wiki/ToolsIndex#Install_and_usage
 .. _Pandoc: http://www.pandoc.org
 .. _`SCons user's guide`: http://scons.org/doc/production/HTML/scons-user.html
 .. _panflute: https://pypi.org/project/panflute/
+.. _`supported by panflute`: https://github.com/sergiocorreia/panflute#supported-pandoc-versions

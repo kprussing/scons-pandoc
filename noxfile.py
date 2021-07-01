@@ -2,6 +2,7 @@ import filecmp
 import pathlib
 import re
 import shutil
+import subprocess
 
 import nox
 
@@ -22,9 +23,14 @@ def flake8(session):
         if scons < "4" or python >= "3.9"
     ],
 )
-def test(session, python, scons):
-    session.install(f"scons=={scons}", "panflute>=2.0")
-    session.conda_install("pandoc")
+@nox.parametrize(
+    "panflute,pandoc", [("<2.0", ">=2.7,<2.10"), (">=2.0", ">2.10")]
+)
+def test(session, python, scons, panflute, pandoc):
+    session.install(f"scons=={scons}", f"panflute{panflute}",
+                    "import_metadata; python_version<'3.8'",
+                    )
+    session.conda_install(f"pandoc{pandoc}")
 
     root = pathlib.Path(__file__).parent
     dest = pathlib.Path(session.bin).parent
@@ -61,6 +67,21 @@ def test(session, python, scons):
 
     session.chdir(dest)
     session.run(*command, external=False)
-    assert filecmp.cmp(root / "example" / "example.html",
+
+    pandoc = pathlib.Path(session.bin) / "pandoc"
+    proc = subprocess.run([str(pandoc.resolve()), "--version"],
+                          capture_output=True,
+                          text=True
+                          )
+    pandoc_version = re.match(r"pandoc\s*(\d+[.]\d+)",
+                              proc.stdout,
+                              re.IGNORECASE
+                              ).group(1)
+    if tuple(int(_) for _ in pandoc_version.split(".")) < (2, 10):
+        tag = "-old"
+    else:
+        tag = ""
+
+    assert filecmp.cmp(root / "example" / f"example{tag}.html",
                        dest / "example.html",
                        shallow=False)

@@ -27,6 +27,14 @@ import shlex
 import subprocess
 import sys
 
+try:
+    import importlib.metadata as metadata
+except ImportError:
+    # Work around the fact that mypy has a bug
+    #
+    # -   https://github.com/python/mypy/issues/1153
+    import importlib_metadata as metadata  # type: ignore
+
 if sys.version_info < (3, 6):
     raise RuntimeError(
         "Panflute (and thus this Tool) does not support Python < 3.6"
@@ -63,6 +71,22 @@ class PandocNotFound(ToolPandocWarning):
 
 
 class PanfluteNotFound(ToolPandocWarning):
+    pass
+
+
+class PandocVersionMissing(ToolPandocWarning):
+    pass
+
+
+class PandocBadVersion(ToolPandocWarning):
+    pass
+
+
+class PanfluteBadVersion(ToolPandocWarning):
+    pass
+
+
+class PanflutePandocVersionSkew(ToolPandocWarning):
     pass
 
 
@@ -132,14 +156,6 @@ def _detect(env):
         return env["PANDOC"]
     except KeyError:
         pass
-
-    try:
-        # Just make sure it's available for the scanner
-        import panflute  # noqa: F401
-    except ImportError:
-        raise SCons.Errors.StopError(
-                PanfluteNotFound, "Could not find :package:`panflute`"
-            )
 
     pandoc = env.WhereIs("pandoc")
     if pandoc:
@@ -443,4 +459,57 @@ def generate(env):
 
 
 def exists(env):
-    return _detect(env)
+    pandoc = _detect(env)
+    proc = subprocess.run([pandoc, "--version"], capture_output=True,
+                          text=True)
+    match = re.match(r"pandoc\s+(\d+[.]\d+)", proc.stdout, re.IGNORECASE)
+    if not match:
+        raise SCons.Errors.StopError(
+            PandocVersionMissing,
+            f"Could not determine Pandoc version from: '{proc.stdout}'"
+        )
+
+    pandoc_version_ = match.group(1)
+    if pandoc_version_ == "2.10":
+        raise SCons.Errors.StopError(
+            PandocBadVersion, "Pandoc 2.10 is not supported"
+        )
+
+    try:
+        pandoc_version = tuple(
+            int(_) for _ in pandoc_version_.split(".")
+            if re.match(r"^(\d)+$", _)
+        )
+    except ValueError:
+        raise SCons.Errors.StopError(
+            PandocBadVersion,
+            f"Could not parse Pandoc version {pandoc_version_}"
+        )
+
+    try:
+        panflute_version_ = metadata.version("panflute")
+    except metadata.PackageNotFoundError:
+        raise SCons.Errors.StopError(
+                PanfluteNotFound, "Could not find panflute"
+            )
+
+    try:
+        panflute_version = tuple(
+            int(_) for _ in panflute_version_.split(".")
+            if re.match(r"^\d+$", _)
+        )
+    except ValueError:
+        raise SCons.Errors.StopError(
+            PanfluteBadVersion,
+            f"Could not parse panflute version {panflute_version_}"
+        )
+
+    if any(pandoc_version < (2, 10) and panflute_version >= (2,),
+           pandoc_version > (2, 10) and panflute_version < (2,)):
+        raise SCons.Errors.StopError(
+                PanflutePandocVersionSkew,
+                f"Incompatible Pandoc (version {pandoc_version_}) and "
+                f"Panflute (version {panflute_version_}) found"
+            )
+
+    return pandoc
