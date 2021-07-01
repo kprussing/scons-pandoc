@@ -48,7 +48,8 @@ metadata flags.
 Installation
 ------------
 
-To install using pip, clone this repository and run
+To install using pip with SCons version 4 or later, clone this
+repository and run
 
     pip install .
 
