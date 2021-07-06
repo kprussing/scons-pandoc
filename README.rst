@@ -1,3 +1,9 @@
+.. note:: This project has been contributed to the SCons foundation.
+   See the scons-contrib_ to get the newest version of this tool (or
+   SCons itself if it becomes a core tool).
+
+.. _scons-contrib: https://github.com/SCons/scons-contrib
+
 Pandoc Support for SCons
 ========================
 
